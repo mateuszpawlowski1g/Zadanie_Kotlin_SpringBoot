@@ -98,12 +98,11 @@ class UserController(val restTemplate: RestTemplate){
                 typeRef<UserData>()
             )
 //            val c = result?.body?.uid
-//            println("Nobody lives in $c")//Test
+//            println("users uid $c")//Test
             val tempEmail = result?.body?.email
         Database.connect("jdbc:sqlite:/data/data.db", "org.sqlite.JDBC")
         if (emailcheck(ListOfEmails,tempEmail)) {
 
-            println("coś się powtarza")
             User.update ({User.email like "${result?.body?.email}"}){
                 it[id] = "${result?.body?.id}"
                 it[uid] = "${result?.body?.uid}"
