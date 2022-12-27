@@ -92,6 +92,7 @@ object UserSubscription: Table(){
     val term = varchar("term",50)
     override val primaryKey = PrimaryKey(subscriptionId,name ="PK_id_subscription")
 }
+val ListOfEmails = Vector<String>()
 @RestController
 @EnableScheduling
 class UserController(val restTemplate: RestTemplate){
@@ -102,7 +103,7 @@ class UserController(val restTemplate: RestTemplate){
         val headers = HttpHeaders()
         headers.set("x-org-id", "pwf.no")
         headers.set("x-client", "kotlin-test-client")
-        for ( i in 0..9) {
+
             val result: ResponseEntity<UserData>? = restTemplate.exchange(
                 "https://random-data-api.com/api/v2/users",
                 HttpMethod.GET,
@@ -111,83 +112,142 @@ class UserController(val restTemplate: RestTemplate){
             )
             val c = result?.body?.uid
             println("Nobody lives in $c")
-            if (result?.body?.uid == c) {
-                Database.connect("jdbc:sqlite:/data/data.db", "org.sqlite.JDBC")
-                transaction {
-                    addLogger(StdOutSqlLogger)
+            val tempEmail = result?.body?.email
 
-                    SchemaUtils.create(User, Address, UserCoordinates, UserCreditCard, UserEmploy, UserSubscription)
+        if (emailcheck(ListOfEmails,tempEmail)) {
+
+            println("coś się powtarza")
+                                User.update ({User.email like "${result?.body?.email}"}){
+                                    it[id] = "${result?.body?.id}"
+                                    it[uid] = "${result?.body?.uid}"
+            //                    it[addressId] =Address.id
+            //                    it[subscriptionId] =UserSubscription.id
+            //                    it[EmployId] =UserEmploy.id
+            //                    it[ccId] =UserCreditCard.id
+            //                    it[coordinatesId] =UserCoordinates.id
+                                    it[password] = "${result?.body?.password}"
+                                    it[fname] = "${result?.body?.firstname}"
+                                    it[lname] = "${result?.body?.lastname}"
+                                    it[username] = "${result?.body?.username}"
+                                    it[email] = "${result?.body?.email}"
+                                    it[avatar] = "${result?.body?.avatar}"
+                                    it[gender] = "${result?.body?.gender}"
+                                    it[phonenumber] = "${result?.body?.phonenumber}"
+                                    it[sin] = "${result?.body?.socialinsurancenumber}"
+                                    it[dob] = "${result?.body?.dateofbirth}"
+                                }
+        }
+        else {
+            ListOfEmails.addElement(tempEmail)
+            println("Działa")
+
+            Database.connect("jdbc:sqlite:/data/data.db", "org.sqlite.JDBC")
+
+
+            transaction {
+                addLogger(StdOutSqlLogger)
 //                    val existsOp = exists(User.select { User.email eq "${result?.body?.email}" })
-//                    val res = Table.Dual.slice(existsOp).selectAll().first()
-//                    val existsResult = res[existsOp]
-//                    if (existsOp==null){
-//                        println("nie ma powtorek")
-//                    }
+//                    println("${existsOp}")
 
-                    UserCoordinates.insert {
 
-                        it[lat] = "${result?.body?.address?.coordinates?.lat}"
-                        it[lng] = "${result?.body?.address?.coordinates?.lng}"
-                    } get UserCoordinates.coordinatesId
+                SchemaUtils.create(User, Address, UserCoordinates, UserCreditCard, UserEmploy, UserSubscription)
 
-                    UserSubscription.insert {
 
-                        it[plan] = "${result?.body?.subscription?.plan}"
-                        it[status] = "${result?.body?.subscription?.status}"
-                        it[pm] = "${result?.body?.subscription?.paymentmethod}"
-                        it[term] = "${result?.body?.subscription?.term}"
-                    } get UserSubscription.subscriptionId
+                //                    val res = Table.Dual.slice(existsOp).selectAll().first()
+                //                    val existsResult = res[existsOp]
+                //                    println("${existsResult}")
+                //                    if (existsOp==null){
+                //                        println("nie ma powtorek")
+                //                    }
+                //                    User.update ({User.email like "${result?.body?.email}"}){
+                //                        it[id] = "${result?.body?.id}"
+                //                        it[uid] = "${result?.body?.uid}"
+                ////                    it[addressId] =Address.id
+                ////                    it[subscriptionId] =UserSubscription.id
+                ////                    it[EmployId] =UserEmploy.id
+                ////                    it[ccId] =UserCreditCard.id
+                ////                    it[coordinatesId] =UserCoordinates.id
+                //                        it[password] = "${result?.body?.password}"
+                //                        it[fname] = "${result?.body?.firstname}"
+                //                        it[lname] = "${result?.body?.lastname}"
+                //                        it[username] = "${result?.body?.username}"
+                //                        it[email] = "${result?.body?.email}"
+                //                        it[avatar] = "${result?.body?.avatar}"
+                //                        it[gender] = "${result?.body?.gender}"
+                //                        it[phonenumber] = "${result?.body?.phonenumber}"
+                //                        it[sin] = "${result?.body?.socialinsurancenumber}"
+                //                        it[dob] = "${result?.body?.dateofbirth}"
+                //                    }
+                //                    UserCoordinates.update({UserCoordinates.coordinatesId like "${result?.body?.id}"}) {
+                //
+                //                        it[lat] = "${result?.body?.address?.coordinates?.lat}"
+                //                        it[lng] = "${result?.body?.address?.coordinates?.lng}"
+                //                    } //get UserCoordinates.coordinatesId
+                UserCoordinates.insert {
 
-                    UserEmploy.insert {
+                    it[lat] = "${result?.body?.address?.coordinates?.lat}"
+                    it[lng] = "${result?.body?.address?.coordinates?.lng}"
+                } get UserCoordinates.coordinatesId
 
-                        it[title] = "${result?.body?.employment?.title}"
-                        it[skill] = "${result?.body?.employment?.skill}"
-                    } get UserEmploy.employId
 
-                    UserCreditCard.insert {
+                UserSubscription.insert {
 
-                        it[cc] = "${result?.body?.creditCard?.ccnumber}"
-                    } get UserCreditCard.ccId
+                    it[plan] = "${result?.body?.subscription?.plan}"
+                    it[status] = "${result?.body?.subscription?.status}"
+                    it[pm] = "${result?.body?.subscription?.paymentmethod}"
+                    it[term] = "${result?.body?.subscription?.term}"
+                } get UserSubscription.subscriptionId
 
-                    Address.insert {
-                        it[streetname] = "${result?.body?.address?.streetname}"
-                        it[streetaddrees] = "${result?.body?.address?.streetaddress}"
-                        it[country] = "${result?.body?.address?.country}"
-                        it[state] = "${result?.body?.address?.state}"
-                        it[zipcode] = "${result?.body?.address?.zipcode}"
-                    } get Address.addressId
+                UserEmploy.insert {
 
-                    User.insert {
-                        it[id] = "${result?.body?.id}"
-                        it[uid] = "${result?.body?.uid}"
+                    it[title] = "${result?.body?.employment?.title}"
+                    it[skill] = "${result?.body?.employment?.skill}"
+                } get UserEmploy.employId
+
+                UserCreditCard.insert {
+
+                    it[cc] = "${result?.body?.creditCard?.ccnumber}"
+                } get UserCreditCard.ccId
+
+                Address.insert {
+                    it[streetname] = "${result?.body?.address?.streetname}"
+                    it[streetaddrees] = "${result?.body?.address?.streetaddress}"
+                    it[country] = "${result?.body?.address?.country}"
+                    it[state] = "${result?.body?.address?.state}"
+                    it[zipcode] = "${result?.body?.address?.zipcode}"
+                } get Address.addressId
+
+                User.insert {
+                    it[id] = "${result?.body?.id}"
+                    it[uid] = "${result?.body?.uid}"
 //                    it[addressId] =Address.id
 //                    it[subscriptionId] =UserSubscription.id
 //                    it[EmployId] =UserEmploy.id
 //                    it[ccId] =UserCreditCard.id
 //                    it[coordinatesId] =UserCoordinates.id
-                        it[password] = "${result?.body?.password}"
-                        it[fname] = "${result?.body?.firstname}"
-                        it[lname] = "${result?.body?.lastname}"
-                        it[username] = "${result?.body?.username}"
-                        it[email] = "${result?.body?.email}"
-                        it[avatar] = "${result?.body?.avatar}"
-                        it[gender] = "${result?.body?.gender}"
-                        it[phonenumber] = "${result?.body?.phonenumber}"
-                        it[sin] = "${result?.body?.socialinsurancenumber}"
-                        it[dob] = "${result?.body?.dateofbirth}"
-                    }
-
-
-
+                    it[password] = "${result?.body?.password}"
+                    it[fname] = "${result?.body?.firstname}"
+                    it[lname] = "${result?.body?.lastname}"
+                    it[username] = "${result?.body?.username}"
+                    it[email] = "${result?.body?.email}"
+                    it[avatar] = "${result?.body?.avatar}"
+                    it[gender] = "${result?.body?.gender}"
+                    it[phonenumber] = "${result?.body?.phonenumber}"
+                    it[sin] = "${result?.body?.socialinsurancenumber}"
+                    it[dob] = "${result?.body?.dateofbirth}"
                 }
 
 
-                result?.body?.let {
-                    logger.info { "Resources found: " }
-                    return ResponseEntity.ok(it)
-                }
+            }
+
+
+            result?.body?.let {
+                logger.info { "Resources found: " }
+                return ResponseEntity.ok(it)
             }
         }
+
+
         return ResponseEntity.notFound().build()
     }
     @Scheduled(fixedRate = 60000)
@@ -196,4 +256,15 @@ class UserController(val restTemplate: RestTemplate){
             person()
         }
     }
+    fun emailcheck(vec: Vector<String>, s: String?): Boolean {
+        for (i in vec){
+            if (vec.contains(s)){
+                return true
+            }
+        }
+        return false
+    }
+
 }
+
+

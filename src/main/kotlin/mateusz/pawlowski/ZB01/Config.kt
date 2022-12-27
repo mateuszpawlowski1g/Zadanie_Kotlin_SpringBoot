@@ -21,7 +21,7 @@ class Config {
     fun init() {
         objectMapper.dateFormat = ISO8601DateFormat()
     }
-    //@Scheduled(fixedRate = 600000)
+
 
     @Bean
     fun restTemplate(): RestTemplate {

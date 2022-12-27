@@ -15,22 +15,5 @@ class Zb01Application
 
 fun main(args: Array<String>) {
 	SpringApplication.run(Zb01Application::class.java,*args)
-//	Database.connect("jdbc:sqlite:/data/data.db", "org.sqlite.JDBC")
-//	transaction {
-//		addLogger(StdOutSqlLogger)
-//
-//		SchemaUtils.create (User)
-//
-//		val xd = User.insert {
-//			it[id] = "132452"
-//		} get User.id
-//		User.insert {
-//			it[id] = "1"
-//			it[name] = "Andrey"
-//			it[User.uid] = xd
-//		}
-//
-//		SchemaUtils.drop (User)
-//	}
 
 }
