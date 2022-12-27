@@ -1,12 +1,6 @@
 package mateusz.pawlowski.ZB01
 
-import com.fasterxml.jackson.annotation.JsonProperty
-import mateusz.pawlowski.ZB01.Address.autoIncrement
-import mateusz.pawlowski.ZB01.Address.nullable
-import mateusz.pawlowski.ZB01.Address.references
-import mateusz.pawlowski.ZB01.Address.uniqueIndex
-import mateusz.pawlowski.ZB01.Data.Coordinates
-import org.springframework.boot.autoconfigure.web.WebProperties
+
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
@@ -16,10 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.client.RestTemplate
 import mu.KotlinLogging
-import org.jetbrains.annotations.NotNull
 import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
-import org.jetbrains.exposed.sql.statements.InsertStatement
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.annotation.Scheduled
@@ -31,11 +22,6 @@ inline fun <reified T : Any> typeRef(): ParameterizedTypeReference<T> = object :
 object User: Table(){
 
     val id = varchar("id",10)
-//    val addressId = (integer("address_id")references Address.id).nullable()
-//    val coordinatesId = (integer("coordinates_id")references UserCoordinates.id).nullable()
-//    val EmployId = (integer("employ_id")references UserEmploy.id).nullable()
-//    val ccId = (integer("cc_id")references UserCreditCard.id).nullable()
-//    val subscriptionId = (integer("subscription_id")references UserSubscription.id).nullable()
     val uid = varchar("uid",50)
     val password = varchar("password",50)
     val fname = varchar("first_name",50)
@@ -52,7 +38,6 @@ object User: Table(){
 }
 object Address: Table(){
     val addressId = (varchar("address_id",10)references User.id).nullable()
-    //val id = varchar("id",10)
     val streetname = varchar("street_name",50)
     val streetaddrees = varchar("street_address",50)
     val zipcode = varchar("zip_code",50)
@@ -93,6 +78,8 @@ object UserSubscription: Table(){
     override val primaryKey = PrimaryKey(subscriptionId,name ="PK_id_subscription")
 }
 val ListOfEmails = Vector<String>()
+
+
 @RestController
 @EnableScheduling
 class UserController(val restTemplate: RestTemplate){
@@ -110,79 +97,37 @@ class UserController(val restTemplate: RestTemplate){
                 HttpEntity("parameters", headers),
                 typeRef<UserData>()
             )
-            val c = result?.body?.uid
-            println("Nobody lives in $c")
+//            val c = result?.body?.uid
+//            println("Nobody lives in $c")//Test
             val tempEmail = result?.body?.email
-
+        Database.connect("jdbc:sqlite:/data/data.db", "org.sqlite.JDBC")
         if (emailcheck(ListOfEmails,tempEmail)) {
 
             println("coś się powtarza")
-                                User.update ({User.email like "${result?.body?.email}"}){
-                                    it[id] = "${result?.body?.id}"
-                                    it[uid] = "${result?.body?.uid}"
-            //                    it[addressId] =Address.id
-            //                    it[subscriptionId] =UserSubscription.id
-            //                    it[EmployId] =UserEmploy.id
-            //                    it[ccId] =UserCreditCard.id
-            //                    it[coordinatesId] =UserCoordinates.id
-                                    it[password] = "${result?.body?.password}"
-                                    it[fname] = "${result?.body?.firstname}"
-                                    it[lname] = "${result?.body?.lastname}"
-                                    it[username] = "${result?.body?.username}"
-                                    it[email] = "${result?.body?.email}"
-                                    it[avatar] = "${result?.body?.avatar}"
-                                    it[gender] = "${result?.body?.gender}"
-                                    it[phonenumber] = "${result?.body?.phonenumber}"
-                                    it[sin] = "${result?.body?.socialinsurancenumber}"
-                                    it[dob] = "${result?.body?.dateofbirth}"
-                                }
+            User.update ({User.email like "${result?.body?.email}"}){
+                it[id] = "${result?.body?.id}"
+                it[uid] = "${result?.body?.uid}"
+                it[password] = "${result?.body?.password}"
+                it[fname] = "${result?.body?.firstname}"
+                it[lname] = "${result?.body?.lastname}"
+                it[username] = "${result?.body?.username}"
+                it[email] = "${result?.body?.email}"
+                it[avatar] = "${result?.body?.avatar}"
+                it[gender] = "${result?.body?.gender}"
+                it[phonenumber] = "${result?.body?.phonenumber}"
+                it[sin] = "${result?.body?.socialinsurancenumber}"
+                it[dob] = "${result?.body?.dateofbirth}"
+            }
         }
         else {
             ListOfEmails.addElement(tempEmail)
-            println("Działa")
-
-            Database.connect("jdbc:sqlite:/data/data.db", "org.sqlite.JDBC")
-
 
             transaction {
                 addLogger(StdOutSqlLogger)
-//                    val existsOp = exists(User.select { User.email eq "${result?.body?.email}" })
-//                    println("${existsOp}")
-
 
                 SchemaUtils.create(User, Address, UserCoordinates, UserCreditCard, UserEmploy, UserSubscription)
 
 
-                //                    val res = Table.Dual.slice(existsOp).selectAll().first()
-                //                    val existsResult = res[existsOp]
-                //                    println("${existsResult}")
-                //                    if (existsOp==null){
-                //                        println("nie ma powtorek")
-                //                    }
-                //                    User.update ({User.email like "${result?.body?.email}"}){
-                //                        it[id] = "${result?.body?.id}"
-                //                        it[uid] = "${result?.body?.uid}"
-                ////                    it[addressId] =Address.id
-                ////                    it[subscriptionId] =UserSubscription.id
-                ////                    it[EmployId] =UserEmploy.id
-                ////                    it[ccId] =UserCreditCard.id
-                ////                    it[coordinatesId] =UserCoordinates.id
-                //                        it[password] = "${result?.body?.password}"
-                //                        it[fname] = "${result?.body?.firstname}"
-                //                        it[lname] = "${result?.body?.lastname}"
-                //                        it[username] = "${result?.body?.username}"
-                //                        it[email] = "${result?.body?.email}"
-                //                        it[avatar] = "${result?.body?.avatar}"
-                //                        it[gender] = "${result?.body?.gender}"
-                //                        it[phonenumber] = "${result?.body?.phonenumber}"
-                //                        it[sin] = "${result?.body?.socialinsurancenumber}"
-                //                        it[dob] = "${result?.body?.dateofbirth}"
-                //                    }
-                //                    UserCoordinates.update({UserCoordinates.coordinatesId like "${result?.body?.id}"}) {
-                //
-                //                        it[lat] = "${result?.body?.address?.coordinates?.lat}"
-                //                        it[lng] = "${result?.body?.address?.coordinates?.lng}"
-                //                    } //get UserCoordinates.coordinatesId
                 UserCoordinates.insert {
 
                     it[lat] = "${result?.body?.address?.coordinates?.lat}"
@@ -220,11 +165,6 @@ class UserController(val restTemplate: RestTemplate){
                 User.insert {
                     it[id] = "${result?.body?.id}"
                     it[uid] = "${result?.body?.uid}"
-//                    it[addressId] =Address.id
-//                    it[subscriptionId] =UserSubscription.id
-//                    it[EmployId] =UserEmploy.id
-//                    it[ccId] =UserCreditCard.id
-//                    it[coordinatesId] =UserCoordinates.id
                     it[password] = "${result?.body?.password}"
                     it[fname] = "${result?.body?.firstname}"
                     it[lname] = "${result?.body?.lastname}"
@@ -240,7 +180,6 @@ class UserController(val restTemplate: RestTemplate){
 
             }
 
-
             result?.body?.let {
                 logger.info { "Resources found: " }
                 return ResponseEntity.ok(it)
@@ -250,7 +189,7 @@ class UserController(val restTemplate: RestTemplate){
 
         return ResponseEntity.notFound().build()
     }
-    @Scheduled(fixedRate = 60000)
+    @Scheduled(fixedRate = 600000)
     fun tenperson(){
         for(i in 0..9){
             person()

@@ -1,7 +1,6 @@
 package mateusz.pawlowski.ZB01
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect
-import com.fasterxml.jackson.annotation.JsonInclude
+
 import com.fasterxml.jackson.annotation.JsonProperty
 import mateusz.pawlowski.ZB01.Data.*
 import java.util.*
