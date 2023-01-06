@@ -7,7 +7,7 @@ import java.util.*
 
 data class UserData(
 
-    @JsonProperty("id")  val id: Int,
+    @JsonProperty("id")  val id: Long,
     @JsonProperty("uid")  val uid: String,
     val password: String,
     @JsonProperty("first_name") val firstname:String,

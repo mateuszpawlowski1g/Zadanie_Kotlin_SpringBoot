@@ -103,8 +103,8 @@ class UserController(val restTemplate: RestTemplate){
 //            val c = result?.body?.uid
 //            println("users uid $c")//Test
             val tempEmail = result?.body?.email
-        val tempid = "${result?.body?.id}"
-        val tmp = tempid.toLong()
+
+
         val tempemail = "${result?.body?.email}"
 
         Database.connect("jdbc:sqlite:/data/data.db", "org.sqlite.JDBC")
@@ -132,7 +132,7 @@ class UserController(val restTemplate: RestTemplate){
             if (currentEmail.equals(tempemail)) {
 
                 User.update({ User.email like "${result?.body?.email}" }) {
-                    it[id] = tmp
+                    it[id] = result?.body?.id!!
                     it[uid] = "${result?.body?.uid}"
                     it[password] = "${result?.body?.password}"
                     it[fname] = "${result?.body?.firstname}"
@@ -189,7 +189,7 @@ class UserController(val restTemplate: RestTemplate){
                 } get Address.addressId
 
                 User.insert {
-                    it[id] = tmp
+                    it[id] = result?.body?.id!!
                     it[uid] = "${result?.body?.uid}"
                     it[password] = "${result?.body?.password}"
                     it[fname] = "${result?.body?.firstname}"
