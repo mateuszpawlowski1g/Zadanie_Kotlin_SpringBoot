@@ -2,7 +2,9 @@ package mateusz.pawlowski.ZB01
 
 
 import com.fasterxml.jackson.databind.deser.impl.ReadableObjectId
+import mateusz.pawlowski.ZB01.Address.coordinatesid
 import mateusz.pawlowski.ZB01.Address.nullable
+import mateusz.pawlowski.ZB01.Data.Coordinates
 import mateusz.pawlowski.ZB01.User.nullable
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpEntity
@@ -16,10 +18,12 @@ import mu.KotlinLogging
 import org.jetbrains.annotations.NotNull
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.springframework.context.annotation.Primary
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.annotation.Scheduled
 import org.sqlite.SQLiteDataSource
 import java.util.*
+
 
 private val logger = KotlinLogging.logger { }
 
@@ -39,24 +43,28 @@ object User: Table(){
     val dob = varchar("date_of_birth", 50).nullable()
     override val primaryKey = PrimaryKey(id,name ="PK_id")
 }
+
 object Address: Table(){
     val addressId = long("address_id").autoIncrement()
+
     val userid = long("user_id").nullable()
+    val coordinatesid = (integer("coordinates_id")references UserCoordinates.coordinatesId).nullable()
+    // val cityId = (integer("city_id") references Cities.id).nullable()
     val streetname = varchar("street_name",50).nullable()
     val streetaddrees = varchar("street_address",50).nullable()
     val zipcode = varchar("zip_code",50).nullable()
     val state = varchar("state",50).nullable()
     val country = varchar("country",50).nullable()
 
-    override val primaryKey = PrimaryKey(addressId,name ="PK_id_address")
+  override val primaryKey = PrimaryKey(addressId,name ="PK_id_address")
 }
 object UserCoordinates: Table(){
 
-    val coordinatesId = long("coordinates_id").autoIncrement()
+    val coordinatesId = integer("coordinates_id").autoIncrement()
     val userid = long("user_id").nullable()
     val lat = double("lat").nullable()
     val lng = double("lng").nullable()
-    override val primaryKey = PrimaryKey(coordinatesId,name ="PK_id_coordinates")
+    override val primaryKey = PrimaryKey(coordinatesId,name ="coordinates_id")
 }
 object UserEmploy: Table(){
 
@@ -110,7 +118,7 @@ class UserController(val restTemplate: RestTemplate){
         transaction {
             addLogger(StdOutSqlLogger)
             val query = User.selectAll()
-
+            SchemaUtils.create(User, Address, UserCoordinates, UserCreditCard, UserEmploy, UserSubscription)
             val currentEmail= query.forEach { it[User.email] == result?.body?.email }
 
             if (currentEmail.equals( result?.body?.email!!)) {
@@ -133,13 +141,18 @@ class UserController(val restTemplate: RestTemplate){
 
 
 
-                UserCoordinates.insert {
+//                UserCoordinates.insert {
+//                    it[userid] = result?.body?.id
+//                    it[lat] =  result?.body?.address?.coordinates?.lat
+//                    it[lng] = result?.body?.address?.coordinates?.lng
+//                } get UserCoordinates.coordinatesId
+//                //
+                val saintPetersburgId = UserCoordinates.insert {
                     it[userid] = result?.body?.id
                     it[lat] =  result?.body?.address?.coordinates?.lat
                     it[lng] = result?.body?.address?.coordinates?.lng
-                }
-
-
+                } get UserCoordinates.coordinatesId
+//
                 UserSubscription.insert {
                     it[userid] = result?.body?.id
                     it[plan] = result?.body?.subscription?.plan
@@ -162,6 +175,7 @@ class UserController(val restTemplate: RestTemplate){
                 Address.insert {
                     it[userid] = result?.body?.id
                     it[streetname] = result?.body?.address?.streetname
+                    it[Address.coordinatesid] =  saintPetersburgId
                     it[streetaddrees] = result?.body?.address?.streetaddress
                     it[country] = result?.body?.address?.country
                     it[state] = result?.body?.address?.state
