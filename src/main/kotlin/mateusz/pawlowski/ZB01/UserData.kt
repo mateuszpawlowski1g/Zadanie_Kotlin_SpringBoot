@@ -18,7 +18,7 @@ data class UserData(
     val gender: String,
     @JsonProperty("phone_number") val phonenumber: String,
     @JsonProperty("social_insurance_number") val socialinsurancenumber: String,
-    @JsonProperty("date_of_birth") val dateofbirth: Date,
+    @JsonProperty("date_of_birth") val dateofbirth: String,
     @JsonProperty("employment") val employment: Employ,
     @JsonProperty("address") val address: address,
     @JsonProperty("credit_card") val creditCard: CreditCard,

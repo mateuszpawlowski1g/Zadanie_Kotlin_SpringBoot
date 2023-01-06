@@ -2,6 +2,8 @@ package mateusz.pawlowski.ZB01
 
 
 import com.fasterxml.jackson.databind.deser.impl.ReadableObjectId
+import mateusz.pawlowski.ZB01.Address.nullable
+import mateusz.pawlowski.ZB01.User.nullable
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
@@ -23,68 +25,70 @@ private val logger = KotlinLogging.logger { }
 
 inline fun <reified T : Any> typeRef(): ParameterizedTypeReference<T> = object : ParameterizedTypeReference<T>() {}
 object User: Table(){
-    val id = long("id")
-   // val id = varchar("id",10)
-    val uid = varchar("uid",50)
-    val password = varchar("password",50)
-    val fname = varchar("first_name",50)
-    val lname = varchar("last_name",50)
-    val username = varchar("username",50)
-    val email = varchar("email",50)
-    val avatar = varchar("avatar",100)
-    val gender = varchar("gender",20)
-    val phonenumber = varchar("phone_number",50)
-    val sin = varchar("social_insurance_number",30)
-    val dob = varchar("date_of_birth", 50)
-
+    val id = long("id").nullable()
+    val uid = varchar("uid",50).nullable()
+    val password = varchar("password",50).nullable()
+    val fname = varchar("first_name",50).nullable()
+    val lname = varchar("last_name",50).nullable()
+    val username = varchar("username",50).nullable()
+    val email = varchar("email",50).nullable()
+    val avatar = varchar("avatar",100).nullable()
+    val gender = varchar("gender",20).nullable()
+    val phonenumber = varchar("phone_number",50).nullable()
+    val sin = varchar("social_insurance_number",30).nullable()
+    val dob = varchar("date_of_birth", 50).nullable()
     override val primaryKey = PrimaryKey(id,name ="PK_id")
 }
 object Address: Table(){
-    val addressId = (long("address_id")references User.id).nullable()
-    val streetname = varchar("street_name",50)
-    val streetaddrees = varchar("street_address",50)
-    val zipcode = varchar("zip_code",50)
-    val state = varchar("state",50)
-    val country = varchar("country",50)
+    val addressId = long("address_id").autoIncrement()
+    val userid = long("user_id").nullable()
+    val streetname = varchar("street_name",50).nullable()
+    val streetaddrees = varchar("street_address",50).nullable()
+    val zipcode = varchar("zip_code",50).nullable()
+    val state = varchar("state",50).nullable()
+    val country = varchar("country",50).nullable()
 
     override val primaryKey = PrimaryKey(addressId,name ="PK_id_address")
 }
 object UserCoordinates: Table(){
 
-    val coordinatesId = (long("address_id",) references User.id).nullable()
-    val lat = varchar("lat",50)
-    val lng = varchar("lng",50)
-
+    val coordinatesId = long("coordinates_id").autoIncrement()
+    val userid = long("user_id").nullable()
+    val lat = double("lat").nullable()
+    val lng = double("lng").nullable()
     override val primaryKey = PrimaryKey(coordinatesId,name ="PK_id_coordinates")
 }
 object UserEmploy: Table(){
 
-    val employId = (long("address_id") references User.id).nullable()
-    val title = varchar("title",50)
-    val skill = varchar("key_skill",50)
+    val employId = long("employ_id").autoIncrement()
+    val userid = long("user_id").nullable()
+    val title = varchar("title",50).nullable()
+    val skill = varchar("key_skill",50).nullable()
 
     override val primaryKey = PrimaryKey(employId,name ="PK_id_employ")
 }
 object UserCreditCard: Table(){
 
-    val ccId = (long("address_id") references User.id).nullable()
-    val cc = varchar("cc_number",50)
+    val ccId = long("credit_card_id").autoIncrement()
+    val userid = long("user_id").nullable()
+    val cc = varchar("cc_number",50).nullable()
 
     override val primaryKey = PrimaryKey(ccId,name ="PK_id_cc")
 }
 object UserSubscription: Table(){
-    val subscriptionId = (long("address_id") references User.id).nullable()
-    val plan = varchar("plan",50)
-    val status = varchar("status",50)
-    val pm = varchar("payment_method",50)
-    val term = varchar("term",50)
+    val subscriptionId = long("subscription_id").autoIncrement()
+    val userid = long("user_id").nullable()
+    val plan = varchar("plan",50).nullable()
+    val status = varchar("status",50).nullable()
+    val pm = varchar("payment_method",50).nullable()
+    val term = varchar("term",50).nullable()
     override val primaryKey = PrimaryKey(subscriptionId,name ="PK_id_subscription")
 }
-//val ListOfEmails = Vector<String>()
 
 
 @RestController
 @EnableScheduling
+
 class UserController(val restTemplate: RestTemplate){
     @GetMapping("/person")
     fun person(): ResponseEntity<UserData> {
@@ -100,107 +104,83 @@ class UserController(val restTemplate: RestTemplate){
                 HttpEntity("parameters", headers),
                 typeRef<UserData>()
             )
-//            val c = result?.body?.uid
-//            println("users uid $c")//Test
-            val tempEmail = result?.body?.email
-
-
-        val tempemail = "${result?.body?.email}"
 
         Database.connect("jdbc:sqlite:/data/data.db", "org.sqlite.JDBC")
 
-
-
         transaction {
             addLogger(StdOutSqlLogger)
-
-            SchemaUtils.create(User, Address, UserCoordinates, UserCreditCard, UserEmploy, UserSubscription)
             val query = User.selectAll()
-            //query.forEach {  }
-//        query.forEach {
-//            assert { it[User.email] == tempEmail }
-//        }
-//        val db = this.readable
-//        val currentEmail= db.rawQuery("SELECT * FROM users WHERE email=?", arrayOf(tempemail))
-            val currentEmail= query.forEach { it[User.email] == tempEmail }
-//            if (currentEmail.equals(tempemail)){
-//                println("nie działą")
-//            }
-//            else{
-//                println("działa")
-//            }
-            if (currentEmail.equals(tempemail)) {
 
-                User.update({ User.email like "${result?.body?.email}" }) {
-                    it[id] = result?.body?.id!!
-                    it[uid] = "${result?.body?.uid}"
-                    it[password] = "${result?.body?.password}"
-                    it[fname] = "${result?.body?.firstname}"
-                    it[lname] = "${result?.body?.lastname}"
-                    it[username] = "${result?.body?.username}"
-                    it[email] = "${result?.body?.email}"
-                    it[avatar] = "${result?.body?.avatar}"
-                    it[gender] = "${result?.body?.gender}"
-                    it[phonenumber] = "${result?.body?.phonenumber}"
-                    it[sin] = "${result?.body?.socialinsurancenumber}"
-                    it[dob] = "${result?.body?.dateofbirth}"
+            val currentEmail= query.forEach { it[User.email] == result?.body?.email }
+
+            if (currentEmail.equals( result?.body?.email!!)) {
+
+                User.update({ User.email like result?.body?.email!! }) {
+                    it[id] = result?.body?.id
+                    it[uid] = result?.body?.uid
+                    it[password] = result?.body?.password
+                    it[fname] = result?.body?.firstname
+                    it[lname] = result?.body?.lastname
+                    it[username] = result?.body?.username
+                    it[email] = result?.body?.email
+                    it[avatar] = result?.body?.avatar
+                    it[gender] =result?.body?.gender
+                    it[phonenumber] = result?.body?.phonenumber
+                    it[sin] = result?.body?.socialinsurancenumber
+                    it[dob] = result?.body?.dateofbirth
                 }
             } else {
-                //ListOfEmails.addElement(tempEmail)
 
-//            transaction {
-//                addLogger(StdOutSqlLogger)
-//
-//                SchemaUtils.create(User, Address, UserCoordinates, UserCreditCard, UserEmploy, UserSubscription)
 
 
                 UserCoordinates.insert {
-
-                    it[lat] = "${result?.body?.address?.coordinates?.lat}"
-                    it[lng] = "${result?.body?.address?.coordinates?.lng}"
-                } get UserCoordinates.coordinatesId
+                    it[userid] = result?.body?.id
+                    it[lat] =  result?.body?.address?.coordinates?.lat
+                    it[lng] = result?.body?.address?.coordinates?.lng
+                }
 
 
                 UserSubscription.insert {
-
-                    it[plan] = "${result?.body?.subscription?.plan}"
-                    it[status] = "${result?.body?.subscription?.status}"
-                    it[pm] = "${result?.body?.subscription?.paymentmethod}"
-                    it[term] = "${result?.body?.subscription?.term}"
-                } get UserSubscription.subscriptionId
+                    it[userid] = result?.body?.id
+                    it[plan] = result?.body?.subscription?.plan
+                    it[status] =  result?.body?.subscription?.status
+                    it[pm] = result?.body?.subscription?.paymentmethod
+                    it[term] = result?.body?.subscription?.term
+                }
 
                 UserEmploy.insert {
-
-                    it[title] = "${result?.body?.employment?.title}"
-                    it[skill] = "${result?.body?.employment?.skill}"
-                } get UserEmploy.employId
+                    it[userid] = result?.body?.id
+                    it[title] = result?.body?.employment?.title
+                    it[skill] = result?.body?.employment?.skill
+                }
 
                 UserCreditCard.insert {
-
-                    it[cc] = "${result?.body?.creditCard?.ccnumber}"
-                } get UserCreditCard.ccId
+                    it[userid] = result?.body?.id
+                    it[cc] = result?.body?.creditCard?.ccnumber
+                }
 
                 Address.insert {
-                    it[streetname] = "${result?.body?.address?.streetname}"
-                    it[streetaddrees] = "${result?.body?.address?.streetaddress}"
-                    it[country] = "${result?.body?.address?.country}"
-                    it[state] = "${result?.body?.address?.state}"
-                    it[zipcode] = "${result?.body?.address?.zipcode}"
-                } get Address.addressId
+                    it[userid] = result?.body?.id
+                    it[streetname] = result?.body?.address?.streetname
+                    it[streetaddrees] = result?.body?.address?.streetaddress
+                    it[country] = result?.body?.address?.country
+                    it[state] = result?.body?.address?.state
+                    it[zipcode] = result?.body?.address?.zipcode
+                }
 
                 User.insert {
-                    it[id] = result?.body?.id!!
-                    it[uid] = "${result?.body?.uid}"
-                    it[password] = "${result?.body?.password}"
-                    it[fname] = "${result?.body?.firstname}"
-                    it[lname] = "${result?.body?.lastname}"
-                    it[username] = "${result?.body?.username}"
-                    it[email] = "${result?.body?.email}"
-                    it[avatar] = "${result?.body?.avatar}"
-                    it[gender] = "${result?.body?.gender}"
-                    it[phonenumber] = "${result?.body?.phonenumber}"
-                    it[sin] = "${result?.body?.socialinsurancenumber}"
-                    it[dob] = "${result?.body?.dateofbirth}"
+                    it[id] = result?.body?.id
+                    it[uid] = result?.body?.uid
+                    it[password] = result?.body?.password
+                    it[fname] = result?.body?.firstname
+                    it[lname] = result?.body?.lastname
+                    it[username] = result?.body?.username
+                    it[email] = result?.body?.email
+                    it[avatar] = result?.body?.avatar
+                    it[gender] =result?.body?.gender
+                    it[phonenumber] = result?.body?.phonenumber
+                    it[sin] = result?.body?.socialinsurancenumber
+                    it[dob] = result?.body?.dateofbirth
                 }
 
 
@@ -222,14 +202,7 @@ class UserController(val restTemplate: RestTemplate){
             person()
         }
     }
-    fun emailcheck(vec: Vector<String>, s: String?): Boolean {
-        for (i in vec){
-            if (vec.contains(s)){
-                return true
-            }
-        }
-        return false
-    }
+
 
 }
 
